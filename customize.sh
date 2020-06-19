@@ -444,6 +444,27 @@ abort() {
   umask $UMASK;
   exit 1;
 }
+nh_install() {
+  ui_print "Installing Nethunter Apps";
+  [[ "$(getenforce)" == "Enforcing" ]] && ENFORCE=true || ENFORCE=false
+  ${ENFORCE} && setenforce 0
+  VERIFY=$(settings get global verifier_verify_adb_installs)
+  settings put global verifier_verify_adb_installs 0
+  pm uninstall -k com.offsec.nethunter &> /dev/null
+  pm uninstall -k com.offsec.nethunter.kex &> /dev/null
+  pm uninstall -k com.offsec.nhterm &> /dev/null
+  for file in apps/*.apk; do pm install -r -g $file; done
+  pm grant com.offsec.nethunter android.permission.ACCESS_FINE_LOCATION
+  pm grant com.offsec.nethunter android.permission.ACCESS_COARSE_LOCATION
+  pm grant com.offsec.nethunter android.permission.READ_EXTERNAL_STORAGE
+  pm grant com.offsec.nethunter android.permission.WRITE_EXTERNAL_STORAGE
+  pm grant com.offsec.nethunter com.offsec.nhterm.permission.RUN_SCRIPT
+  pm grant com.offsec.nethunter com.offsec.nhterm.permission.RUN_SCRIPT_SU
+  pm grant com.offsec.nethunter com.offsec.nhterm.permission.RUN_SCRIPT_NH
+  pm grant com.offsec.nethunter com.offsec.nhterm.permission.RUN_SCRIPT_NH_LOGIN
+  settings put global verifier_verify_adb_installs ${VERIFY}
+  ${ENFORCE} && setenforce 1
+}
 
 UMASK=$(umask);
 umask 022;
@@ -489,6 +510,7 @@ if [ "$ACTION" == installation ]; then
 
   do_install;
   custom_install;
+  nh_install;
 
   update_magisk;
   set_progress 0.8;
